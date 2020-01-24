@@ -1,4 +1,5 @@
 #include "WindowManager.h"
+#include "resource.h"
 #include <sstream>
 
 WindowManager::WindowManager(HINSTANCE hInstance)
@@ -28,12 +29,12 @@ bool WindowManager::CreateWnd(std::string wname, WNDVAR wndVar)
 	wClass.cbClsExtra = 0;
 	wClass.cbWndExtra = 0;
 	wClass.hInstance = hInst;
-	wClass.hIcon = NULL;
+	wClass.hIcon = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 32, 32, 0);
 	wClass.hCursor = NULL;
 	wClass.hbrBackground = NULL;
 	wClass.lpszMenuName = NULL;
 	wClass.lpszClassName = wClassName;
-	wClass.hIconSm = NULL;
+	wClass.hIconSm = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, 0);
 
 	if (!RegisterClassEx(&wClass))
 	{
