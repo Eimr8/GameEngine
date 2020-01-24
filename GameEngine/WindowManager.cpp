@@ -1,4 +1,5 @@
 #include "WindowManager.h"
+#include <sstream>
 
 WindowManager::WindowManager(HINSTANCE hInstance)
 {
@@ -36,7 +37,7 @@ bool WindowManager::CreateWnd(std::string wname, WNDVAR wndVar)
 
 	if (!RegisterClassEx(&wClass))
 	{
-		MessageBox(0, "RegisterClassEx failed", 0, 0);
+		throw LAST_EXCEPT();
 		return false;
 	}
 
@@ -61,13 +62,13 @@ bool WindowManager::CreateWnd(std::string wname, WNDVAR wndVar)
 
 	if (wHandler == NULL) 
 	{
-		MessageBox(0, "CreateWindowManagerEx failed", 0, 0);
+		throw LAST_EXCEPT();
 		return false;
 	}
 
 	this->wndVar = wndVar;
 	this->wName = wname;
-	this->wClassName = (std::string)wClassName;
+	this->wClassName = wClassName;
 
 	//Show WindowManager
 	ShowWindow(wHandler, SW_SHOW);
@@ -116,7 +117,6 @@ LRESULT WindowManager::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 
 	case WM_ACTIVATE:
-		//if (gfx) gfx->paused = !gfx->paused;
 		return 0;
 
 	case WM_EXITSIZEMOVE:
@@ -237,26 +237,78 @@ LRESULT WindowManager::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	return DefWindowProc(wHandler, msg, wParam, lParam);
 }
 
-/*void WindowManager::setGfx(Graphics* gfx) {
-	this->gfx = gfx;
-}*/
-
-/*void WindowManager::setInputMng(InputManager* input) {
-	this->inputMng = input;
-}*/
-
-WNDVAR WindowManager::getWNDVAR()
+WNDVAR WindowManager::getWNDVAR() const noexcept
 {
 	return wndVar;
 }
 
-HWND WindowManager::getWHandler()
+HWND WindowManager::getWHandler() const noexcept
 {
 	return wHandler;
 }
 
-HINSTANCE WindowManager::getHInstance()
+HINSTANCE WindowManager::getHInstance() const noexcept
 {
 	return hInst;
 }
 
+
+/* Exception Class */
+
+WindowManager::Exception::Exception(const char* file, int line, HRESULT hr) noexcept
+	:
+	BaseException(file, line),
+	hr(hr)
+{
+
+}
+
+const char* WindowManager::Exception::what() const noexcept
+{
+	std::ostringstream oss;
+	oss << getType() << "\n"
+		<< "Description: " << getErrorString()
+		<< "Error code: " << getErrorCode() << "\n"
+		<< getFormattedString();
+
+	buffer = oss.str();
+	return buffer.c_str();
+}
+
+const char* WindowManager::Exception::getType() const noexcept
+{
+	return "WindowManager Exception";
+}
+
+std::string WindowManager::Exception::TranslateErrorCode(HRESULT hr) noexcept
+{
+	char* buffer = nullptr;
+	DWORD msgLength = FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM,
+		nullptr,
+		hr,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPSTR)&buffer,
+		0,
+		nullptr
+	);
+
+	if (msgLength == 0)
+	{
+		return "Unidentified error code";
+	}
+
+	std::string errString = buffer;
+	LocalFree(buffer);
+	return errString;
+}
+
+HRESULT WindowManager::Exception::getErrorCode() const noexcept
+{
+	return hr;
+}
+
+std::string WindowManager::Exception::getErrorString() const noexcept
+{
+	return TranslateErrorCode(hr);
+}
